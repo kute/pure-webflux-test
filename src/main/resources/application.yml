@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: pure-webflux-test
+  profiles:
+    active: test
+server:
+  port: 8090
