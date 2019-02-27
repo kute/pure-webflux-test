@@ -5,3 +5,8 @@ spring:
     active: test
 server:
   port: 8090
+info:
+  application: ${spring.application.name}
+  version: 0.0.1
+  auth: kute
+
