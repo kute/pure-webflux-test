@@ -21,7 +21,6 @@ public class PureWebfluxTestApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(PureWebfluxTestApplication.class, args);
-
     }
 
     @Bean
