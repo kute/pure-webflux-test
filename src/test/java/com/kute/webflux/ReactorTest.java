@@ -11,22 +11,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.*;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * created by bailong001 on 2019/02/19 14:38
  */
-public class FluxTest {
+public class ReactorTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FluxTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReactorTest.class);
 
     @Before
     public void before() {
@@ -80,6 +83,16 @@ public class FluxTest {
         Mono<String> mono = Mono.empty();
 
         Mono.fromCallable(RandomUtils::nextInt);
+
+        Mono.just(list)
+                .map(data -> {
+                    data.add(99);
+                    return data;
+                })
+                .log()
+                .subscribe(data -> System.out.println(data.getClass().getSimpleName()),
+                        e -> System.out.println(e.getMessage()),
+                        () -> System.out.println("done"));
 
     }
 
@@ -249,15 +262,31 @@ public class FluxTest {
     @Test
     public void testOperator() throws InterruptedException {
         // zip 若两边元素个数不等，则以 少的为主（即 直至 某一个 publisher 先完成）
-        Flux.zip(Flux.just(1, 2, 3), Flux.just("a", "b", "c"))
-                .log().subscribe();
+
+        // 不接受null元素
+//        Flux.fromIterable(Lists.newArrayList("a", null, "b", null))
+//                .log()
+//                .doOnNext(v -> Optional.ofNullable(v).orElse("0"))
+//                .onErrorReturn("0")
+////                .map(v -> Optional.ofNullable(v).orElse("0"))
+//                .subscribe();
+
+        AtomicReference<Map<Integer, String>> resultMap = new AtomicReference<>();
+        Flux.zip(Flux.fromIterable(Lists.newArrayList(1, 2, 3, 4)), Flux.fromIterable(Lists.newArrayList("a", null, "b", null))
+                .onErrorContinue((throwable, s) -> {
+            System.out.println("-----s");
+        }))
+                .log()
+                .collectMap(Tuple2::getT1, Tuple2::getT2)
+                .subscribe(resultMap::set, ex -> LOGGER.error(""), () -> LOGGER.info("final data:{}", resultMap.get()));
+        System.out.println(resultMap.get());
 
 
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        Flux.zip(
-                Flux.just("a", 'b', "c"),
-                Flux.interval(Duration.ofMillis(1000))).subscribe(t -> System.out.println(t.getT1()), null, countDownLatch::countDown);
-        countDownLatch.await(10, TimeUnit.SECONDS);
+//        CountDownLatch countDownLatch = new CountDownLatch(1);
+//        Flux.zip(
+//                Flux.just("a", 'b', "c"),
+//                Flux.interval(Duration.ofMillis(1000))).subscribe(t -> System.out.println(t.getT1()), null, countDownLatch::countDown);
+//        countDownLatch.await(10, TimeUnit.SECONDS);
 
     }
 

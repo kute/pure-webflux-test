@@ -33,8 +33,17 @@ reactor-by-example:
 - https://blog.csdn.net/get_set/article/category/7484996
 - https://blog.51cto.com/liukang/2090191
 
-背压： 当Subscriber请求的数据的访问超出它的处理能力时，Publisher限制数据发送速度的能力。本质上背压和TCP中的窗口限流机制比较类似，都是让消费者反馈请求数据的范围，生产者根据消费者的反馈提供一定量的数据来进行流控
+背压： 当Subscriber请求的数据的访问超出它的处理能力时，Publisher限制数据发送速度的能力。
+本质上背压和TCP中的窗口限流机制比较类似，都是让消费者反馈请求数据的范围，生产者根据消费者的反馈提供一定量的数据来进行流控
+
+content-type
+
+- text/event-stream：HTML5 server-send-event（SSE），允许服务端推送数据到客户端，与websocket比较：http://javascript.ruanyifeng.com/htmlapi/eventsource.html
+- application/stream+json：持续地json数据流
 
 
+### rxjava
+
+1、https://github.com/ReactiveX/RxJava
 
 

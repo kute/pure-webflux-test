@@ -5,7 +5,8 @@ spring:
     active: test
   data:
     mongodb:
-      uri: mongodb+srv://kute:bailong110@mongo-kute-cluster-9itum.mongodb.net/test?retryWrites=true
+      uri: mongodb://kute:kute110@127.0.0.1:27017/test?retryWrites=true
+#      uri: mongodb+srv://kute:<password>@mongo-kute-cluster-9itum.mongodb.net/test?retryWrites=true
 
 server:
   port: 8090

@@ -20,6 +20,7 @@ public class StaticRouteConfig {
     @Bean
     public RouterFunction<?> staticRouterFunction() {
         return route(GET("/ni/alluser"), request ->
+                // url 替换
                 status(HttpStatus.FOUND).location(URI.create(request.path().replace("ni", "user"))).build())
                 ;
     }

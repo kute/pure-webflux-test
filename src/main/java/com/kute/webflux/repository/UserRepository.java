@@ -7,14 +7,14 @@ import reactor.core.publisher.Mono;
 
 /**
  * created by bailong001 on 2019/03/11 20:14
- *
- *
  */
 @Repository
+//public interface UserRepository extends ReactiveMongoRepository<User, String> {
 public interface UserRepository extends ReactiveCrudRepository<User, String> {
 
     /**
      * 方法名 可以 自动填充完成
+     *
      * @param name
      * @return
      */
