@@ -14,6 +14,8 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 /**
  * created by bailong001 on 2019/03/05 14:32
  *
+ * 函数式 响应式模式
+ *
  * 1. HandlerFunction相当于Controller中的具体处理方法，输入为请求，输出为装在Mono中的响应
  * 2. RouterFunction，顾名思义，路由，相当于@RequestMapping，用来判断什么样的url映射到那个具体的HandlerFunction，
  * 输入为请求，输出为装在Mono里边的Handlerfunction
@@ -32,12 +34,13 @@ public class UserRouteConfig {
                     String name = request.pathVariable("name");
                     return userHandler.getByName(name);
                 })
-                .andRoute(GET("/mongo/getall"), userHandler::getAllUser)
                 // 每秒输出当前时间，服务器推送
                 .andRoute(GET("/user/time"), userHandler::currentTime)
                 // application/stream+json
                 .andRoute(GET("/user/stream"), userHandler::delayStream)
-                //
+                // alluser
+                .andRoute(GET("/user/alluser"), userHandler::getAllUser)
+                // bodyToMono，等价于 ApiController.save2()
                 .andRoute(POST("/user/save"), userHandler::saveOrUpdate)
 
                 ;

@@ -40,7 +40,10 @@ public class UserHandler extends AbstractHandler {
     }
 
     public Mono<ServerResponse> getUserById(ServerRequest request) {
-        return responseJson(userRepository.findById(request.pathVariable("id")), User.class);
+        return responseJson(
+                Mono.justOrEmpty(request.pathVariable("id"))
+                        .flatMap(userRepository::findById),
+                User.class);
     }
 
     public Mono<ServerResponse> currentTime(ServerRequest request) {
@@ -61,18 +64,22 @@ public class UserHandler extends AbstractHandler {
                 // 加此content-type 数据才会 1s一个输出到客户端，否则 会等全部数据完成后再输出到客户端
                 .contentType(MediaType.APPLICATION_STREAM_JSON)
                 .body(userRepository.findAll()
-                        .doOnNext(user -> LOGGER.info("delayStream produce user={}", user))
+                                .doOnNext(user -> LOGGER.info("delayStream produce user={}", user))
                                 // 每个元素延迟1s请求：subscribe -> onNext，这里延迟消费
                                 .delayElements(Duration.ofSeconds(1L)),
                         User.class);
     }
 
+    /**
+     * TODO 待测试
+     * @param request
+     * @return
+     */
     public Mono<ServerResponse> saveOrUpdate(ServerRequest request) {
         AtomicReference<Mono<User>> mono = new AtomicReference<>(Mono.empty());
         request.bodyToMono(User.class)
                 .log()
-                .subscribe(user ->
-                        {
+                .subscribe(user -> {
                             LOGGER.info("saveOrUpdate begin, user={}", user);
                             mono.set(doSave(user));
                         },
@@ -82,7 +89,7 @@ public class UserHandler extends AbstractHandler {
     }
 
     public Mono<User> doSave(User user) {
-        if(null == user) {
+        if (null == user) {
             return Mono.empty();
         }
         return userRepository.save(user)

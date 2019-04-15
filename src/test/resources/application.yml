@@ -16,9 +16,9 @@ spring:
         password:
         pool-config:
           minIdle: 5
-            maxIdle: 20
-            maxTotal: 200
-            maxWaitMillis: 1000
+          maxIdle: 20
+          maxTotal: 200
+          maxWaitMillis: 1000
 
 server:
   port: 8090
