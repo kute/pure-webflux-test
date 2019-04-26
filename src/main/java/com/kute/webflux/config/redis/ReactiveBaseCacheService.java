@@ -29,7 +29,7 @@ public class ReactiveBaseCacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReactiveBaseCacheService.class);
 
     @Resource
-    protected ReactiveRedisTemplate<String, String> lettuceReactiveRedisTemplate;
+    protected ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
     public Mono<String> getKV(String key) {
         return opsForValue().get(key);
@@ -53,19 +53,19 @@ public class ReactiveBaseCacheService {
     }
 
     public Optional<Long> del(String... keyList) {
-        return lettuceReactiveRedisTemplate.delete(keyList).blockOptional();
+        return reactiveRedisTemplate.delete(keyList).blockOptional();
     }
 
     public Optional<Long> del(String key) {
-        return lettuceReactiveRedisTemplate.delete(key).blockOptional();
+        return reactiveRedisTemplate.delete(key).blockOptional();
     }
 
     public Optional<Long> del(Publisher<String> keys) {
-        return lettuceReactiveRedisTemplate.delete(keys).blockOptional();
+        return reactiveRedisTemplate.delete(keys).blockOptional();
     }
 
     public Mono<Boolean> exists(String key) {
-        return lettuceReactiveRedisTemplate.hasKey(key);
+        return reactiveRedisTemplate.hasKey(key);
     }
 
     public Optional<Boolean> setNullKey(String nullKey, String nullValue) {
@@ -85,35 +85,35 @@ public class ReactiveBaseCacheService {
     }
 
     public ReactiveValueOperations<String, String> opsForValue() {
-        return lettuceReactiveRedisTemplate.opsForValue();
+        return reactiveRedisTemplate.opsForValue();
     }
 
     public ReactiveHashOperations<String, String, String> opsForHash() {
-        return lettuceReactiveRedisTemplate.opsForHash();
+        return reactiveRedisTemplate.opsForHash();
     }
 
     public ReactiveZSetOperations<String, String> opsForZSet() {
-        return lettuceReactiveRedisTemplate.opsForZSet();
+        return reactiveRedisTemplate.opsForZSet();
     }
 
     public ReactiveSetOperations<String, String> opsForSet() {
-        return lettuceReactiveRedisTemplate.opsForSet();
+        return reactiveRedisTemplate.opsForSet();
     }
 
     public ReactiveListOperations<String, String> opsForList() {
-        return lettuceReactiveRedisTemplate.opsForList();
+        return reactiveRedisTemplate.opsForList();
     }
 
     public ReactiveHyperLogLogOperations<String, String> opsForHyperLogLog() {
-        return lettuceReactiveRedisTemplate.opsForHyperLogLog();
+        return reactiveRedisTemplate.opsForHyperLogLog();
     }
 
     public ReactiveGeoOperations<String, String> opsForGeo() {
-        return lettuceReactiveRedisTemplate.opsForGeo();
+        return reactiveRedisTemplate.opsForGeo();
     }
 
     public RedisSerializationContext<String, String> serializationContext() {
-        return lettuceReactiveRedisTemplate.getSerializationContext();
+        return reactiveRedisTemplate.getSerializationContext();
     }
 
     public RedisSerializationContext.SerializationPair<String> getKeySerializationPair() {
@@ -149,16 +149,16 @@ public class ReactiveBaseCacheService {
     }
 
     public Optional<Boolean> expire(String key, Duration duration) {
-        return lettuceReactiveRedisTemplate.expire(key, duration).blockOptional();
+        return reactiveRedisTemplate.expire(key, duration).blockOptional();
     }
 
     public Optional<Boolean> expire(String key, Instant instant) {
-        return lettuceReactiveRedisTemplate.expireAt(key, instant).blockOptional();
+        return reactiveRedisTemplate.expireAt(key, instant).blockOptional();
     }
 
     @Deprecated
     public Flux<String> keys(String pattern) {
-        return lettuceReactiveRedisTemplate.keys(pattern);
+        return reactiveRedisTemplate.keys(pattern);
     }
 
     public Flux<Object> flushdb(String pattern, int limitPerDel) {
@@ -167,7 +167,7 @@ public class ReactiveBaseCacheService {
         }
         Flux<Object> flux = Flux.empty();
         Mono.fromCallable(() -> ScanOptions.scanOptions().match(pattern).count(limitPerDel).build())
-                .subscribe(scanOptions -> flux.concatWith(lettuceReactiveRedisTemplate.execute(connection -> {
+                .subscribe(scanOptions -> flux.concatWith(reactiveRedisTemplate.execute(connection -> {
                     connection.keyCommands().scan(scanOptions)
                             .subscribe(keyBuffer -> connection.keyCommands().del(keyBuffer).blockOptional());
                     return null;
@@ -183,7 +183,7 @@ public class ReactiveBaseCacheService {
         Flux<ByteBuffer> keyFlux = Flux.empty();
         Mono.fromCallable(() -> ScanOptions.scanOptions().match(pattern).count(1000).build())
                 .subscribe(scanOptions -> {
-                    lettuceReactiveRedisTemplate.execute(connection -> {
+                    reactiveRedisTemplate.execute(connection -> {
                         keyFlux.concatWith(connection.keyCommands().scan(scanOptions));
                         return null;
                     });
@@ -205,7 +205,7 @@ public class ReactiveBaseCacheService {
         List<String> finalArgs = args;
         return Try.ofCallable(() -> {
             RedisScript<String> redisScript = new DefaultRedisScript<>(luaScript, String.class);
-            return lettuceReactiveRedisTemplate.execute(redisScript, finalKeys, finalArgs)
+            return reactiveRedisTemplate.execute(redisScript, finalKeys, finalArgs)
                     .collectList()
                     .flatMapMany(Flux::fromIterable);
         })

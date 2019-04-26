@@ -18,10 +18,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceClientConfigurat
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 import java.time.Duration;
 import java.util.Map;
@@ -71,23 +68,27 @@ public class RedisConfiguration {
         return new LettuceConnectionFactory(redisClusterConfiguration, clientPollConfig);
     }
 
-    @Bean(name = "lettuceReactiveRedisTemplate")
+    /**
+     * RedisReactiveAutoConfiguration 会自动创建一个名位 reactiveRedisTemplate 的bean，但是序列化方式为 jdk，故这里 覆盖使用 string序列化
+     *
+     * @return
+     */
+    @Bean(name = "reactiveRedisTemplate")
     @ConditionalOnBean(value = RedisLettuceClusterProperties.class)
-    public ReactiveRedisOperations<String, String> lettuceReactiveRedisTemplate() {
+    public ReactiveRedisOperations reactiveRedisTemplate() {
 
         LOGGER.info("Init reactiveRedisTemplateForLettuceCluster ...");
 
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+//        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+//
+//        RedisSerializationContext<String, String> redisSerializationContext =
+//                RedisSerializationContext.<String, String>newSerializationContext()
+//                        .key(stringRedisSerializer)
+//                        .value(stringRedisSerializer)
+//                        .hashKey(stringRedisSerializer)
+//                        .hashValue(stringRedisSerializer)
+//                        .build();
 
-        RedisSerializationContext<String, String> redisSerializationContext =
-                RedisSerializationContext.<String, String>newSerializationContext()
-                        .key(stringRedisSerializer)
-                        .value(stringRedisSerializer)
-                        .hashKey(stringRedisSerializer)
-                        .hashValue(stringRedisSerializer)
-                        .build();
-
-        return new ReactiveRedisTemplate<>(reactiveLettuceClusterConnectionFactory(),
-                redisSerializationContext);
+        return new ReactiveStringRedisTemplate(reactiveLettuceClusterConnectionFactory());
     }
 }
