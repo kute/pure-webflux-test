@@ -79,16 +79,6 @@ public class RedisConfiguration {
 
         LOGGER.info("Init reactiveRedisTemplateForLettuceCluster ...");
 
-//        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-//
-//        RedisSerializationContext<String, String> redisSerializationContext =
-//                RedisSerializationContext.<String, String>newSerializationContext()
-//                        .key(stringRedisSerializer)
-//                        .value(stringRedisSerializer)
-//                        .hashKey(stringRedisSerializer)
-//                        .hashValue(stringRedisSerializer)
-//                        .build();
-
         return new ReactiveStringRedisTemplate(reactiveLettuceClusterConnectionFactory());
     }
 }

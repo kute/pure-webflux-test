@@ -1,7 +1,8 @@
 package com.kute.webflux.redis;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.kute.webflux.config.redis.ReactiveBaseCacheService;
-import io.vavr.Tuple;
 import org.assertj.core.util.Lists;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,11 +16,13 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import static org.junit.Assert.*;
-
 import javax.annotation.Resource;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.*;
 
 /**
  * created by bailong001 on 2019/04/14 15:50
@@ -100,6 +103,31 @@ public class ReactiveRedisTest {
         assertNotNull(value);
         assertTrue(value.blockOptional().isPresent());
         assertEquals("newValue", value.blockOptional().get());
+
+    }
+
+    @Test
+    public void kv_hashTEST() {
+        Map<String, String> dataMap = Maps.newHashMap(ImmutableMap.of(
+                "fei", "899",
+                "123", "123v",
+                "jsdk", "232d",
+                "gfsd2", "sdg23r",
+                "1385934950384", "gjwji23jkfk"
+        ));
+
+        String bucketPrefix = "kv_hash_bucket_";
+
+        dataMap.forEach((key, value) -> {
+            reactiveBaseCacheService.setKVByHash(bucketPrefix, key, value, Duration.ofMinutes(5));
+        });
+
+        dataMap.forEach((key, value) -> {
+            Optional oldValue = reactiveBaseCacheService.getKVByHash(bucketPrefix, key);
+            assertNotNull(oldValue);
+            assertTrue(oldValue.isPresent());
+            assertEquals(oldValue.get(), value);
+        });
 
     }
 

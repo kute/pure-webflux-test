@@ -1,6 +1,8 @@
 package com.kute.webflux;
 
 import com.google.common.base.Function;
+import com.kute.webflux.listener.MyListener;
+import com.kute.webflux.listener.MyListenerContainer;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.util.Lists;
 import org.junit.Before;
@@ -20,9 +22,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 /**
  * created by bailong001 on 2019/02/19 14:38
@@ -206,6 +210,91 @@ public class ReactorTest {
 //        CountDownLatch countDownLatch = new CountDownLatch(1);
 //        countDownLatch.await();
 
+    }
+
+    @Test
+    public void testCreate() throws InterruptedException {
+
+        MyListenerContainer container = new MyListenerContainer();
+
+        int elements = 10;
+        CountDownLatch countDownLatch = new CountDownLatch(elements);
+
+//        // 异步
+//        Flux.create(fluxSink -> container.registListener(new com.kute.webflux.listener.MyListener() {
+//            @Override
+//            public void onEvent(MyEvent myEvent) {
+//                LOGGER.info("fluxSink next event={}", myEvent);
+//                fluxSink.next(myEvent);
+//            }
+//
+//            @Override
+//            public void onError(Throwable throwable) {
+//                LOGGER.error("fluxSink error", throwable);
+//                fluxSink.error(throwable);
+//            }
+//
+//            @Override
+//            public void onCompleted() {
+//                LOGGER.info("fluxSink complete");
+//                fluxSink.complete();
+//            }
+//        }), FluxSink.OverflowStrategy.LATEST)
+//                .subscribe(new BaseSubscriber<Object>() {
+//            @Override
+//            protected void hookOnSubscribe(Subscription subscription) {
+//                subscription.request(1);
+//            }
+//
+//            @Override
+//            protected void hookOnNext(Object value) {
+//                LOGGER.info("subscribe:{}",value);
+//                try {
+//                    TimeUnit.SECONDS.sleep(2);
+//                } catch (InterruptedException e1) {
+//                    e1.printStackTrace();
+//                }
+//                request(1);
+//            }
+//        });
+
+        // 同步
+        container.registListener(new com.kute.webflux.listener.MyListener() {
+            @Override
+            public void onEvent(MyEvent myEvent) {
+                sleepAndConsume(myEvent, countDownLatch);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                LOGGER.error("fluxSink error", throwable);
+            }
+
+            @Override
+            public void onCompleted() {
+                LOGGER.info("fluxSink complete");
+            }
+        });
+
+        sleep(5);
+
+        IntStream.rangeClosed(1, elements).forEach(i -> {
+            LOGGER.info("Begin consume event, event={}", i);
+//            sleep(1);
+            container.consumeEvent(new com.kute.webflux.listener.MyListener.MyEvent().setData(String.valueOf(i)));
+            container.consumeEvent(new com.kute.webflux.listener.MyListener.MyEvent().setData(String.valueOf(i + 10)));
+        });
+
+        container.stoped();
+
+        countDownLatch.await();
+    }
+
+    void sleepAndConsume(Object data, CountDownLatch countDownLatch) {
+        LOGGER.info("sleepAndConsume begin with data={}", data);
+        sleep(2);
+        LOGGER.info("sleepAndConsume end with data={}", data);
+        countDownLatch.countDown();
     }
 
     @Test
@@ -457,12 +546,22 @@ public class ReactorTest {
         return "Hello, Reactor!";
     }
 
+    private void sleep(int seconds) {
+        try {
+            TimeUnit.SECONDS.sleep(seconds);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Test
     public void testBackPressure() {
 
         Flux.range(1, 6)    // 1
                 .doOnRequest(n -> LOGGER.info("Request " + n + " values..."))    // 2
+                .log()
                 .subscribe(new BaseSubscriber<Integer>() {  // 3
+
                     @Override
                     protected void hookOnSubscribe(Subscription subscription) { // 4
                         LOGGER.info("Subscribed and make a request...");
@@ -477,7 +576,7 @@ public class ReactorTest {
                             e.printStackTrace();
                         }
                         LOGGER.info("Get value [" + value + "]");    // 8
-                        request(1); // 9
+                        request(6); // 9
                     }
                 });
     }

@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.zip.CRC32;
 
 /**
  * created by bailong001 on 2018/10/08 18:22
@@ -212,5 +213,66 @@ public class ReactiveBaseCacheService {
                 .onFailure(ex -> LOGGER.error("eval lusscript error, script={}", luaScript, ex))
                 .getOrElse(Flux.empty());
     }
+
+    /**
+     * 哈希桶 个数 = 预估的key的数量大小 / 每个hash-bucket里存放元素的个数(默认 512)
+     * 这里预估 key大概有 1000_0000个
+     */
+    private long BUCKET_COUNT = 25000;
+
+    /**
+     * 通过将key hash 然后分别存储到 单个的bucket hash里，降低内存占用
+     * 注：hash分为两部分：
+     * 1、key 按照 CRC32 hash
+     * 2、同一个buckt，field需要hash
+     * 对于精确度非常高的情况，不建议使用
+     *
+     * @param key
+     * @param value
+     * @param duration
+     * @return
+     */
+    public Optional<Boolean> setKVByHash(String bucketPrefix, String key, String value, Duration duration) {
+
+        /**
+         * 第一步，选用哈希算法，决定将key放到哪个bucket
+         */
+        long bucketIndex = getKeyBucketIndexForKey(key);
+        String bucketKey = bucketPrefix + bucketIndex;
+        System.out.println(bucketIndex);
+        /**
+         * 第二步，对于内层field，我们就选用另一个hash算法，以避免两个完全不同的值，通过crc32（key） % COUNT后，发生field再次相同，产生hash冲突导致值被覆盖的情况
+         */
+        String field = BKDR_hash(key);
+
+        Mono<Boolean> result = opsForHash().put(bucketKey, field, value);
+        if (null != duration) {
+            expire(bucketKey, duration);
+        }
+        return result.blockOptional();
+    }
+
+    public Optional<String> getKVByHash(String bucketPrefix, String key) {
+        long bucketIndex = getKeyBucketIndexForKey(key);
+        String bucketKey = bucketPrefix + bucketIndex;
+        String field = BKDR_hash(key);
+        return opsForHash().get(bucketKey, field).blockOptional();
+    }
+
+    private long getKeyBucketIndexForKey(String key) {
+        CRC32 crc32 = new CRC32();
+        crc32.update(key.getBytes());
+        return crc32.getValue() % BUCKET_COUNT;
+    }
+
+    private String BKDR_hash(String key) {
+        int seed = 131;
+        int hash = 0;
+        for (int i = 0; i < key.length(); i++) {
+            hash = hash * seed + key.charAt(i);
+        }
+        return (hash & 0x7FFFFFFF) + "";
+    }
+
 
 }
